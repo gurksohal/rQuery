@@ -87,7 +87,7 @@ pub fn build_executor_plan(
     }
 }
 
-fn get_column_name(name: &str, table_name: &Option<String>) -> String {
+fn get_column_name_inner(name: &str, table_name: &Option<String>) -> String {
     if table_name.is_none() {
         return name.to_string();
     }
@@ -97,13 +97,37 @@ fn get_column_name(name: &str, table_name: &Option<String>) -> String {
     ret
 }
 
+fn get_column_name(e: &Expr) -> Option<String> {
+    match e {
+        Expr::Alias(a) => Some(get_column_name_inner(&a.name, &a.table_name)),
+        Expr::Column(c) => Some(get_column_name_inner(&c.name, &c.table_name)),
+        Expr::Literal(_) => None,
+        Expr::Binary(b) => {
+            let l_name = get_column_name(&b.left);
+            let r_name = get_column_name(&b.right);
+            if l_name.is_some() && r_name.is_some() {
+                panic!("Both should not be some for expr: {}", e);
+            }
+            if l_name.is_none() && r_name.is_none() {
+                panic!("Both should not be none for expr: {}", e);
+            }
+            if l_name.is_some() {
+                Some(l_name.unwrap())
+            } else {
+                Some(r_name.unwrap())           
+            }
+        }
+        Expr::Function(_) => unreachable!(),
+    }
+}
+
 fn evaluate_expr(expr: &Expr, batch: &RecordBatch) -> ArrowResult<ArrayRef> {
     match expr {
         Expr::Alias(a) => evaluate_expr(a.expr.as_ref(), batch),
-        Expr::Column(c) => {
+        Expr::Column(_) => {
             let idx = batch
                 .schema()
-                .index_of(get_column_name(&c.name, &c.table_name).as_str())?;
+                .index_of(get_column_name(expr).unwrap().as_str())?;
             Ok(batch.column(idx).clone())
         }
         Expr::Literal(val) => {
@@ -217,13 +241,7 @@ impl Executor for ProjectExec {
             }
             for expr in &self.expressions {
                 let arr = evaluate_expr(expr, &batch).unwrap();
-                let name = match expr {
-                    Expr::Alias(a) => get_column_name(&a.name, &a.table_name),
-                    Expr::Column(c) => get_column_name(&c.name, &c.table_name),
-                    Expr::Literal(_) => unreachable!(),
-                    Expr::Binary(_) => unreachable!(),
-                    Expr::Function(_) => unreachable!(),
-                };
+                let name = get_column_name(expr).unwrap();
                 let data_type = arr.data_type().clone();
                 fields.push(Field::new(&name, data_type, false));
                 arrays.push(arr);
