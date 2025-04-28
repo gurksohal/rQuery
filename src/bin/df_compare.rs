@@ -14,7 +14,11 @@ async fn main() {
         println!("Running query {}", i);
         let mine = execute_query(&mut db, i).join("\n");
         let df = df_execute_query(&ctx, i).await.join("\n");
-        assert_eq!(mine, df, "Failed on query {}", i);
+        if mine == df {
+            println!("Output matches");
+        } else {
+            panic!("Failed on query {i}. Mine num_rows: {}, df num_rows: {}", mine.len(), df.len())
+        }
     }
 }
 
