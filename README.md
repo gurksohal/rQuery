@@ -1,5 +1,7 @@
 # SQL Query Engine
-Mini SQL query engine built on top of apache arrow
+Mini columnar SQL query engine built on top of apache arrow
+
+engine parses SQL queries, generates a logical plan, pushes filters down, and executes them against columnar data.
 
 ## Supported Features
 - Scans (csv)
