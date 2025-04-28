@@ -63,8 +63,8 @@ fn main() {
         customers_writer
             .write_record(&[
                 customer.customer_id.to_string(),
-                customer.region,
                 customer.name.to_string(),
+                customer.region,
             ])
             .unwrap();
     }
@@ -72,8 +72,8 @@ fn main() {
     for product in products {
         let record = vec![
             product.product_id.to_string(),
-            product.category,
             product.name.to_string(),
+            product.category,
         ];
         products_writer.write_record(&record).unwrap();
     }
