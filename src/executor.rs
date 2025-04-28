@@ -224,7 +224,6 @@ impl Executor for ProjectExec {
                     Expr::Binary(_) => unreachable!(),
                     Expr::Function(_) => unreachable!(),
                 };
-                println!("Adding field: {}", &name);
                 let data_type = arr.data_type().clone();
                 fields.push(Field::new(&name, data_type, false));
                 arrays.push(arr);
