@@ -18,6 +18,9 @@ fn main() {
         }
 
         let input = input.trim();
+        if input.is_empty() {
+            continue;       
+        }
         if input == "exit" {
             break;
         }
